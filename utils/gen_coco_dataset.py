@@ -116,8 +116,7 @@ def create_coco_dataset(config_path):
         np.random.seed(seed)
 
     dataset_cfg = config['dataset']
-    paths_cfg = config['paths']
-    base_dir = os.path.join(paths_cfg['m2f_repo'], dataset_cfg['output_dir'])
+    base_dir = dataset_cfg['output_dir']
     
     # 定义 COCO 类别
     categories = [

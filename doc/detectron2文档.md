@@ -101,3 +101,6 @@ trainer.train()
 - **`MetadataCatalog.get(name)`**：获取数据集元信息（类别名称、颜色等），用于可视化初始化
 
 - **`Visualizer(image, metadata, scale)`**：将推理结果绘制到原图上，支持实例分割、检测框等可视化
+
+PS
+默认只是保存model final，需要手动注册评估和保存best model的BestCheckpointer

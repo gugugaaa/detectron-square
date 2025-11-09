@@ -15,7 +15,8 @@ train_cfg = config['train']
 if not os.path.exists(dataset_cfg['output_dir']):
     print("Dataset not found, generating...")
     create_coco_dataset('config.yaml')
-from detectron2.engine import DefaultTrainer
+
+from detectron2.engine import DefaultTrainer, hooks
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.config import get_cfg
 from detectron2 import model_zoo
@@ -24,15 +25,14 @@ from detectron2.data import build_detection_test_loader
 DATA_ROOT = dataset_cfg['output_dir']
 TRAIN_JSON = os.path.join(DATA_ROOT, "annotations/instances_train.json")
 VAL_JSON = os.path.join(DATA_ROOT, "annotations/instances_val.json")
-IMAGE_ROOT = DATA_ROOT  # 所有 split 共用
+IMAGE_ROOT = DATA_ROOT
 
-# 在注册前清除已存在的数据集
+# 重新注册数据集
 if "square_train" in DatasetCatalog.list():
     DatasetCatalog.remove("square_train")
 if "square_val" in DatasetCatalog.list():
     DatasetCatalog.remove("square_val")
 
-# 然后重新注册
 register_coco_instances("square_train", {}, TRAIN_JSON, os.path.join(IMAGE_ROOT, "train"))
 register_coco_instances("square_val", {}, VAL_JSON, os.path.join(IMAGE_ROOT, "val"))
 MetadataCatalog.get("square_train").thing_classes = dataset_cfg['class_names']
@@ -52,10 +52,31 @@ cfg.INPUT.MASK_FORMAT = train_cfg['mask_format']
 cfg.OUTPUT_DIR = train_cfg['output_dir']
 os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
+# 新增：周期性评估与“最佳模型”保存配置
+eval_period = int(train_cfg.get('eval_period', 500))
+best_metric = train_cfg.get('best_metric', 'segm/AP')   # 对 Mask R-CNN 通常用 segm/AP
+best_mode = train_cfg.get('best_mode', 'max')           # AP 越大越好 -> 'max'
+best_prefix = train_cfg.get('best_file_prefix', 'model_best')
+
+cfg.TEST.EVAL_PERIOD = eval_period
+
 trainer = DefaultTrainer(cfg)
 trainer.resume_or_load(resume=False)
+
+# 确保 BestCheckpointer 在 EvalHook 之后执行
+trainer.register_hooks([
+    hooks.BestCheckpointer(
+        eval_period=eval_period,
+        checkpointer=trainer.checkpointer,
+        val_metric=best_metric,
+        mode=best_mode,
+        file_prefix=best_prefix
+    )
+])
+
 trainer.train()
 
+# 可选：训练结束后再做一次完整验证并打印
 evaluator = COCOEvaluator("square_val", cfg, False, output_dir=cfg.OUTPUT_DIR)
 val_loader = build_detection_test_loader(cfg, "square_val")
 print(inference_on_dataset(trainer.model, val_loader, evaluator))

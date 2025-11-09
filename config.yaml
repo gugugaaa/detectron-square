@@ -2,22 +2,22 @@ dataset:
   output_dir: 'data/coco_squares'
   img_size: 640
   num_squares_per_img_range:
-    min: 2
-    max: 4
+    min: 3
+    max: 5
   square_size_range:
     min: 50
-    max: 200
+    max: 250
   iou_threshold: 0.8
   max_placement_tries: 100
   class_names:
     - 'square'
   splits:
     - name: 'train'
-      count: 800
+      count: 4000
     - name: 'val'
-      count: 200
+      count: 800
     - name: 'test'
-      count: 100
+      count: 200
 
 train:
   output_dir: "output/mask_rcnn_square"
@@ -25,13 +25,17 @@ train:
   num_workers: 2
   ims_per_batch: 2
   base_lr: 0.00025
-  max_iter: 3000
+  max_iter: 12000
   num_classes: 1
   mask_format: "polygon"
+  eval_period: 500          
+  best_metric: "segm/AP"
+  best_mode: "max"
+  best_file_prefix: "model_best"
 
 predict:
   input: "datasets/hard_test"
   output: "output/predictions"
-  weights: "results/ver3-detectron2-3squares/model_final.pth"
+  weights: "results/model_final.pth"
   score_thresh_test: 0.8
   batch_size: 4

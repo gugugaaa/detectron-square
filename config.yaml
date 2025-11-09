@@ -1,0 +1,37 @@
+dataset:
+  output_dir: 'data/coco_squares'
+  img_size: 640
+  num_squares_per_img_range:
+    min: 2
+    max: 4
+  square_size_range:
+    min: 50
+    max: 200
+  iou_threshold: 0.8
+  max_placement_tries: 100
+  class_names:
+    - 'square'
+  splits:
+    - name: 'train'
+      count: 800
+    - name: 'val'
+      count: 200
+    - name: 'test'
+      count: 100
+
+train:
+  output_dir: "output/mask_rcnn_square"
+  weights: "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
+  num_workers: 2
+  ims_per_batch: 2
+  base_lr: 0.00025
+  max_iter: 3000
+  num_classes: 1
+  mask_format: "polygon"
+
+predict:
+  input: "datasets/hard_test"
+  output: "output/predictions"
+  weights: "results/ver3-detectron2-3squares/model_final.pth"
+  score_thresh_test: 0.8
+  batch_size: 4
